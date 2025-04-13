@@ -1,0 +1,664 @@
+---
+title: "Crab Age Prediction Analysis"
+author: "Jonathan Rocha, Kyle Davisson (Group 3)"
+date: "April 7, 2025"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: cosmo
+    highlight: tango
+    code_folding: show
+    fig_width: 10
+    fig_height: 6
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+# Load required libraries
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(caret)
+library(randomForest)
+library(xgboost)
+library(corrplot)
+library(gridExtra)
+library(ggpubr)
+
+# Set seed for reproducibility
+set.seed(6306)
+```
+
+# Executive Summary
+
+This report presents a comprehensive analysis of crab age prediction based on physical characteristics. The project aims to develop a robust predictive model that accurately estimates crab age using various physical attributes such as size, weight, and sex.
+
+**Key Findings:**
+
+- [To be filled after analysis]
+- [To be filled after analysis]
+- [To be filled after analysis]
+
+**Model Performance:**
+
+- [To be filled after analysis]
+- [To be filled after analysis]
+
+# Introduction
+
+## Project Background
+
+This analysis is part of DS_6306 Project 2, focusing on predicting crab age based on physical attributes. Understanding the relationship between physical characteristics and age is crucial for marine biology research, fisheries management, and ecological studies.
+
+## Objectives
+
+1. **Objective A**: Develop a regression model to predict crab age based on physical attributes, aiming to minimize Mean Absolute Error (MAE).
+2. **Objective B**: Analyze the data to uncover key factors or relationships that contribute to predicting crab ages and identify any other interesting or useful relationships.
+
+## Data Description
+
+The dataset contains measurements of various crab physical attributes and their corresponding ages. The input variables include:
+
+- Sex
+- Length
+- Diameter
+- Height
+- Weight
+- Shucked Weight
+- Viscera Weight
+- Shell Weight
+
+The target variable is Age.
+
+# Data Preparation
+
+## Data Loading and Inspection
+
+```{r load-data, eval=FALSE}
+# Load the training data
+train_data <- read.csv("../train-1.csv")
+
+# Display basic information about the dataset
+cat("Training data dimensions:", dim(train_data), "\n")
+cat("Training data column names:", names(train_data), "\n")
+
+# Display first few rows
+head(train_data) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE)
+
+# Summary statistics
+summary(train_data) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE)
+```
+
+## Data Cleaning
+
+```{r data-cleaning, eval=FALSE}
+# Check for missing values
+missing_values <- colSums(is.na(train_data))
+missing_values
+
+# Handle categorical variables
+if ("Sex" %in% names(train_data)) {
+  train_data$Sex <- as.factor(train_data$Sex)
+  table(train_data$Sex)
+}
+
+# Check for outliers in numerical columns
+numerical_cols <- sapply(train_data, is.numeric)
+numerical_data <- train_data[, numerical_cols]
+
+# Function to identify outliers using IQR method
+identify_outliers <- function(x) {
+  q1 <- quantile(x, 0.25, na.rm = TRUE)
+  q3 <- quantile(x, 0.75, na.rm = TRUE)
+  iqr <- q3 - q1
+  lower_bound <- q1 - 1.5 * iqr
+  upper_bound <- q3 + 1.5 * iqr
+  return(sum(x < lower_bound | x > upper_bound, na.rm = TRUE))
+}
+
+# Apply the function to each numerical column
+outliers_count <- sapply(numerical_data, identify_outliers)
+outliers_count
+```
+
+## Data Preprocessing
+
+```{r preprocessing, eval=FALSE}
+# Normalize/standardize numerical features
+numerical_predictors <- names(train_data)[sapply(train_data, is.numeric)]
+numerical_predictors <- setdiff(numerical_predictors, c("id", "Age"))
+
+# Create preprocessing object
+preproc <- preProcess(train_data[, numerical_predictors], method = c("center", "scale"))
+train_data_normalized <- predict(preproc, train_data)
+
+# Split data into training and validation sets
+train_index <- createDataPartition(train_data$Age, p = 0.8, list = FALSE)
+training_set <- train_data[train_index, ]
+validation_set <- train_data[-train_index, ]
+```
+
+# Exploratory Data Analysis
+
+## Distribution of Crab Ages
+
+```{r age-distribution, eval=FALSE}
+# Create distribution plot of crab ages
+ggplot(train_data, aes(x = Age)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "black", alpha = 0.7) +
+  geom_density(alpha = 0.2, fill = "red") +
+  labs(
+    title = "Distribution of Crab Ages",
+    subtitle = "Histogram with density overlay",
+    x = "Age (years)",
+    y = "Count",
+    caption = "Source: Training dataset"
+  ) +
+  theme_minimal()
+```
+
+## Relationships Between Physical Attributes and Age
+
+```{r scatter-plots, eval=FALSE}
+# Create scatter plots for each predictor vs. Age
+scatter_plots <- list()
+for (predictor in numerical_predictors[1:min(4, length(numerical_predictors))]) {
+  p <- ggplot(train_data, aes_string(x = predictor, y = "Age")) +
+    geom_point(alpha = 0.5, color = "steelblue") +
+    geom_smooth(method = "loess", color = "red") +
+    labs(
+      title = paste("Relationship between", predictor, "and Age"),
+      x = predictor,
+      y = "Age (years)"
+    ) +
+    theme_minimal()
+  
+  scatter_plots[[predictor]] <- p
+}
+
+# Arrange plots in a grid
+do.call(grid.arrange, c(scatter_plots, ncol = 2))
+```
+
+## Correlation Analysis
+
+```{r correlation, eval=FALSE}
+# Calculate correlation matrix
+numerical_data <- train_data[, c(numerical_predictors, "Age")]
+correlation_matrix <- cor(numerical_data, use = "complete.obs")
+
+# Create correlation plot
+corrplot(correlation_matrix, 
+         method = "circle", 
+         type = "upper", 
+         tl.col = "black", 
+         tl.srt = 45,
+         addCoef.col = "black",
+         number.cex = 0.7,
+         title = "Correlation Matrix of Crab Features",
+         mar = c(0, 0, 2, 0))
+```
+
+## Analysis by Sex (if applicable)
+
+```{r sex-analysis, eval=FALSE}
+# Check if Sex is a variable
+if ("Sex" %in% names(train_data)) {
+  # Boxplot of Age by Sex
+  ggplot(train_data, aes(x = Sex, y = Age, fill = Sex)) +
+    geom_boxplot(alpha = 0.7) +
+    labs(
+      title = "Distribution of Crab Ages by Sex",
+      x = "Sex",
+      y = "Age (years)"
+    ) +
+    theme_minimal() +
+    theme(legend.position = "none")
+  
+  # Scatter plots of key measurements by Sex
+  for (predictor in numerical_predictors[1:min(2, length(numerical_predictors))]) {
+    p <- ggplot(train_data, aes_string(x = predictor, y = "Age", color = "Sex")) +
+      geom_point(alpha = 0.5) +
+      geom_smooth(method = "loess") +
+      labs(
+        title = paste("Relationship between", predictor, "and Age by Sex"),
+        x = predictor,
+        y = "Age (years)"
+      ) +
+      theme_minimal()
+    
+    print(p)
+  }
+}
+```
+
+# Feature Engineering
+
+## Creating Interaction Terms
+
+```{r interaction-terms, eval=FALSE}
+# Create a recipe for feature engineering
+library(recipes)
+recipe_obj <- recipe(Age ~ ., data = training_set) %>%
+  # Remove id column
+  step_rm(id) %>%
+  # Create all 2-way interactions between numerical predictors
+  step_interact(terms = ~ all_numeric_predictors():all_numeric_predictors()) %>%
+  # Create polynomial terms for key predictors
+  step_poly(all_of(numerical_predictors), degree = 2) %>%
+  # Center and scale all predictors
+  step_normalize(all_predictors())
+
+# Prepare the recipe
+recipe_prepped <- prep(recipe_obj, training = training_set)
+
+# Apply the recipe to the training and validation sets
+train_data_fe <- bake(recipe_prepped, new_data = training_set)
+valid_data_fe <- bake(recipe_prepped, new_data = validation_set)
+```
+
+## Creating Ratio Features
+
+```{r ratio-features, eval=FALSE}
+# Function to create ratio features
+create_ratio_features <- function(data, predictors) {
+  result <- data
+  n <- length(predictors)
+  
+  # Create ratios between different measurements
+  for (i in 1:(n-1)) {
+    for (j in (i+1):n) {
+      col1 <- predictors[i]
+      col2 <- predictors[j]
+      ratio_name <- paste0("ratio_", col1, "_to_", col2)
+      result[[ratio_name]] <- data[[col1]] / data[[col2]]
+    }
+  }
+  
+  return(result)
+}
+
+# Apply ratio feature creation to training and validation sets
+train_data_with_ratios <- create_ratio_features(training_set, numerical_predictors)
+valid_data_with_ratios <- create_ratio_features(validation_set, numerical_predictors)
+```
+
+## Feature Selection
+
+```{r feature-selection, eval=FALSE}
+# Calculate correlation with target variable
+target_correlations <- sapply(train_data_with_ratios %>% select(-id, -Age), 
+                             function(x) cor(x, train_data_with_ratios$Age, use = "complete.obs"))
+
+# Sort correlations by absolute value
+sorted_correlations <- sort(abs(target_correlations), decreasing = TRUE)
+head(sorted_correlations, 10)
+
+# Select features with absolute correlation above threshold
+correlation_threshold <- 0.3
+selected_features_cor <- names(target_correlations[abs(target_correlations) > correlation_threshold])
+
+# Feature selection using recursive feature elimination (RFE)
+rfe_control <- rfeControl(
+  functions = rfFuncs,  # Random Forest for feature ranking
+  method = "cv",        # Cross-validation
+  number = 5,           # 5-fold CV
+  verbose = FALSE
+)
+
+# Subset of data for RFE (for computational efficiency)
+set.seed(6306)
+rfe_sample_idx <- sample(nrow(train_data_with_ratios), min(5000, nrow(train_data_with_ratios)))
+rfe_data <- train_data_with_ratios[rfe_sample_idx, ] %>% select(-id)
+
+# Run RFE
+rfe_result <- rfe(
+  x = rfe_data %>% select(-Age),
+  y = rfe_data$Age,
+  sizes = c(5, 10, 15, 20),
+  rfeControl = rfe_control
+)
+
+# Get selected features from RFE
+selected_features_rfe <- predictors(rfe_result)
+
+# Union of features from correlation and RFE
+all_selected_features <- union(selected_features_cor, selected_features_rfe)
+
+# Create final feature sets
+train_data_final <- train_data_with_ratios %>% 
+  select(id, Age, all_of(all_selected_features))
+valid_data_final <- valid_data_with_ratios %>% 
+  select(id, Age, all_of(all_selected_features))
+```
+
+# Model Training and Evaluation
+
+## Model Training Setup
+
+```{r model-setup, eval=FALSE}
+# Prepare data for modeling
+train_x <- train_data_final %>% select(-id, -Age)
+train_y <- train_data_final$Age
+valid_x <- valid_data_final %>% select(-id, -Age)
+valid_y <- valid_data_final$Age
+
+# Define evaluation metric function (MAE)
+mae <- function(actual, predicted) {
+  mean(abs(actual - predicted))
+}
+
+# Define cross-validation settings
+cv_control <- trainControl(
+  method = "cv",
+  number = 5,
+  verboseIter = TRUE,
+  allowParallel = TRUE
+)
+```
+
+## Linear Regression (Baseline)
+
+```{r linear-regression, eval=FALSE}
+# Train linear regression model
+lm_model <- train(
+  x = train_x,
+  y = train_y,
+  method = "lm",
+  trControl = cv_control,
+  metric = "MAE"
+)
+
+# Evaluate on validation set
+lm_pred <- predict(lm_model, newdata = valid_x)
+lm_mae <- mae(valid_y, lm_pred)
+cat("Linear Regression Validation MAE:", lm_mae, "\n")
+```
+
+## Random Forest
+
+```{r random-forest, eval=FALSE}
+# Train random forest model
+rf_grid <- expand.grid(
+  mtry = c(floor(sqrt(ncol(train_x))), floor(ncol(train_x)/3), floor(ncol(train_x)/2))
+)
+
+rf_model <- train(
+  x = train_x,
+  y = train_y,
+  method = "rf",
+  trControl = cv_control,
+  tuneGrid = rf_grid,
+  importance = TRUE,
+  metric = "MAE",
+  ntree = 500
+)
+
+# Evaluate on validation set
+rf_pred <- predict(rf_model, newdata = valid_x)
+rf_mae <- mae(valid_y, rf_pred)
+cat("Random Forest Validation MAE:", rf_mae, "\n")
+cat("Best Random Forest parameters:", rf_model$bestTune, "\n")
+
+# Plot variable importance
+varImpPlot(rf_model$finalModel, n.var = min(20, ncol(train_x)), main = "Random Forest Variable Importance")
+```
+
+## Gradient Boosting (XGBoost)
+
+```{r xgboost, eval=FALSE}
+# Train XGBoost model
+xgb_grid <- expand.grid(
+  nrounds = c(100, 200),
+  max_depth = c(3, 6),
+  eta = c(0.01, 0.1),
+  gamma = 0,
+  colsample_bytree = 0.8,
+  min_child_weight = 1,
+  subsample = 0.8
+)
+
+xgb_model <- train(
+  x = train_x,
+  y = train_y,
+  method = "xgbTree",
+  trControl = cv_control,
+  tuneGrid = xgb_grid,
+  metric = "MAE",
+  verbosity = 0
+)
+
+# Evaluate on validation set
+xgb_pred <- predict(xgb_model, newdata = valid_x)
+xgb_mae <- mae(valid_y, xgb_pred)
+cat("XGBoost Validation MAE:", xgb_mae, "\n")
+cat("Best XGBoost parameters:", xgb_model$bestTune, "\n")
+
+# Plot feature importance
+xgb.importance(model = xgb_model$finalModel) %>%
+  as.data.frame() %>%
+  head(20) %>%
+  ggplot(aes(x = reorder(Feature, Gain), y = Gain)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +
+  labs(
+    title = "XGBoost Feature Importance",
+    x = "",
+    y = "Gain"
+  ) +
+  theme_minimal()
+```
+
+## Support Vector Machine (SVM)
+
+```{r svm, eval=FALSE}
+# Train SVM model
+svm_grid <- expand.grid(
+  C = c(0.1, 1, 10),
+  sigma = c(0.01, 0.1, 1)
+)
+
+svm_model <- train(
+  x = train_x,
+  y = train_y,
+  method = "svmRadial",
+  trControl = cv_control,
+  tuneGrid = svm_grid,
+  metric = "MAE"
+)
+
+# Evaluate on validation set
+svm_pred <- predict(svm_model, newdata = valid_x)
+svm_mae <- mae(valid_y, svm_pred)
+cat("SVM Validation MAE:", svm_mae, "\n")
+cat("Best SVM parameters:", svm_model$bestTune, "\n")
+```
+
+## Model Comparison
+
+```{r model-comparison, eval=FALSE}
+# Compare model performance
+model_results <- data.frame(
+  Model = c("Linear Regression", "Random Forest", "XGBoost", "SVM"),
+  MAE = c(lm_mae, rf_mae, xgb_mae, svm_mae)
+)
+
+model_results <- model_results %>% arrange(MAE)
+model_results %>%
+  kable(caption = "Model Performance Comparison") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE)
+
+# Identify best model
+best_model_name <- model_results$Model[1]
+cat("Best model:", best_model_name, "with MAE =", min(model_results$MAE), "\n")
+```
+
+## Prediction vs. Actual Analysis
+
+```{r prediction-analysis, eval=FALSE}
+# Get predictions from best model
+best_pred <- switch(best_model_name,
+                   "Linear Regression" = lm_pred,
+                   "Random Forest" = rf_pred,
+                   "XGBoost" = xgb_pred,
+                   "SVM" = svm_pred)
+
+pred_vs_actual <- data.frame(
+  Actual = valid_y,
+  Predicted = best_pred
+)
+
+# Create prediction vs. actual plot
+ggplot(pred_vs_actual, aes(x = Actual, y = Predicted)) +
+  geom_point(alpha = 0.5, color = "steelblue") +
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+  labs(
+    title = paste("Actual vs. Predicted Crab Age -", best_model_name),
+    subtitle = paste("Validation MAE =", round(min(model_results$MAE), 3)),
+    x = "Actual Age (years)",
+    y = "Predicted Age (years)"
+  ) +
+  theme_minimal()
+```
+
+## Residual Analysis
+
+```{r residual-analysis, eval=FALSE}
+# Calculate residuals
+residuals <- valid_y - best_pred
+residual_df <- data.frame(
+  Predicted = best_pred,
+  Residual = residuals
+)
+
+# Create residual plot
+ggplot(residual_df, aes(x = Predicted, y = Residual)) +
+  geom_point(alpha = 0.5, color = "steelblue") +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  labs(
+    title = paste("Residual Plot -", best_model_name),
+    subtitle = "Residual = Actual - Predicted",
+    x = "Predicted Age (years)",
+    y = "Residual (years)"
+  ) +
+  theme_minimal()
+
+# Histogram of residuals
+ggplot(residual_df, aes(x = Residual)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "black", alpha = 0.7) +
+  geom_vline(xintercept = 0, color = "red", linetype = "dashed") +
+  labs(
+    title = paste("Distribution of Residuals -", best_model_name),
+    x = "Residual (years)",
+    y = "Count"
+  ) +
+  theme_minimal()
+```
+
+# Competition Predictions
+
+```{r competition-predictions, eval=FALSE}
+# Load competition data
+competition_data <- read.csv("../competition-1.csv")
+
+# Apply the same preprocessing steps as for training data
+competition_data_processed <- predict(preproc, competition_data)
+
+# Apply feature engineering
+competition_data_processed <- create_ratio_features(competition_data_processed, numerical_predictors)
+
+# Select only the features used in the model
+competition_data_processed <- competition_data_processed %>%
+  select(id, all_of(intersect(names(competition_data_processed), all_selected_features)))
+
+# Generate predictions using the best model
+competition_predictions <- predict(best_model, newdata = competition_data_processed %>% select(-id))
+
+# Create submission file
+submission <- data.frame(
+  id = competition_data$id,
+  Age = competition_predictions
+)
+
+# Basic statistics of predictions
+summary(submission$Age)
+
+# Create histogram of predictions
+ggplot(submission, aes(x = Age)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(
+    title = "Distribution of Predicted Crab Ages",
+    subtitle = "Competition Data",
+    x = "Predicted Age (years)",
+    y = "Count"
+  ) +
+  theme_minimal()
+```
+
+# Key Findings and Insights
+
+## Important Predictors of Crab Age
+
+Based on our analysis, the following physical attributes were found to be the most important predictors of crab age:
+
+1. [To be filled after analysis]
+2. [To be filled after analysis]
+3. [To be filled after analysis]
+
+## Relationships Between Physical Attributes
+
+Our analysis revealed several interesting relationships between crab physical attributes:
+
+- [To be filled after analysis]
+- [To be filled after analysis]
+- [To be filled after analysis]
+
+## Implications for Marine Biology
+
+The findings from this analysis have several implications for marine biology and fisheries management:
+
+- [To be filled after analysis]
+- [To be filled after analysis]
+- [To be filled after analysis]
+
+# Conclusions
+
+## Summary of Results
+
+This project successfully developed a predictive model for crab age based on physical attributes. The [best model name] achieved a Mean Absolute Error (MAE) of [value] on the validation set, indicating [interpretation of performance].
+
+## Limitations
+
+Despite the success of our model, there are several limitations to consider:
+
+- [To be filled after analysis]
+- [To be filled after analysis]
+- [To be filled after analysis]
+
+## Future Work
+
+Future work could focus on:
+
+- [To be filled after analysis]
+- [To be filled after analysis]
+- [To be filled after analysis]
+
+# Appendix
+
+## Additional Visualizations
+
+[Include any additional visualizations that provide further insights but were not included in the main report]
+
+## Model Details
+
+[Include detailed model specifications, hyperparameters, and other technical details]
+
+## References
+
+[Include any references used in the analysis]

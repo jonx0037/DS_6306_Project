@@ -1,0 +1,23 @@
+# R specific
+.Rhistory
+.RData
+.Rproj.user/
+.Rapp.history
+.Ruserdata
+
+# Mac OS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Large data files (if needed)
+# *.csv
+# *.rds
+
+# Output files (if needed)
+# output/

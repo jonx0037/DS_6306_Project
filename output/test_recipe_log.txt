@@ -1,0 +1,15 @@
+Loading training set...
+
+Is Sex a factor? TRUE 
+
+Creating recipe...
+
+Prepping the recipe...
+Recipe prepped successfully!
+
+Baking the recipe...
+Recipe baked successfully!
+
+Dimensions of feature-engineered data: 12002 x 37 
+
+Test completed. Check output directory for results.
