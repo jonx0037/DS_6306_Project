@@ -1,41 +1,51 @@
 # Crab Age Prediction Project
 
-This repository contains the code and analysis for DS_6306 Project 2, focusing on predicting crab age based on physical attributes.
-
 ## Project Overview
 
-The goal of this project is to develop a regression model that accurately predicts the age of crabs based on their physical characteristics. The project has two main objectives:
+This project, developed as part of the DS 6306 course at Southern Methodist University, focuses on developing a machine learning solution for predicting crab ages based on physical measurements. Our approach combines statistical analysis, machine learning, and interactive data visualization to create accurate age prediction models.
 
-1. **Objective A**: Build a regression model to predict crab age with the lowest possible Mean Absolute Error (MAE).
-2. **Objective B**: Analyze the data to uncover key factors or relationships that contribute to predicting crab ages.
+Visit our project website: [https://jonx0037.github.io/DS_6306_Project/](https://jonx0037.github.io/DS_6306_Project/)
 
-## Repository Structure
+### Key Objectives
 
-```
-DS_6306_Project/
-├── data/                      # Data directory
-│   ├── train-1.csv            # Training data
-│   ├── competition-1.csv      # Competition data
-│   └── sample_submission-1.csv # Sample submission format
-├── scripts/                   # R scripts directory
-│   ├── 01_data_cleaning.R     # Data cleaning and preprocessing
-│   ├── 02_exploratory_analysis.R # EDA with visualizations
-│   ├── 03_feature_engineering.R # Feature creation and selection
-│   ├── 04_model_training.R    # Model training and evaluation
-│   ├── 05_model_prediction.R  # Generate predictions for competition data
-│   └── 06_shiny_dashboard.R   # RShiny dashboard code
-├── models/                    # Directory to save trained models
-├── output/                    # Directory for outputs
-│   ├── plots/                 # Visualizations
-│   └── submission.csv         # Final competition submission
-├── reports/                   # Reports directory
-│   └── analysis_report.Rmd    # R Markdown for final report
-└── README.md                  # Project documentation
-```
+1. **Age Prediction Model**: Develop accurate regression models to predict crab age using physical measurements
+2. **Feature Analysis**: Identify and analyze key physical characteristics that best indicate crab age
+3. **Interactive Visualization**: Create comprehensive visualizations to communicate findings effectively
+4. **Statistical Insights**: Provide detailed statistical analysis of relationships between physical attributes and age
 
-## Data Description
+## Features
 
-The dataset contains measurements of various crab physical attributes and their corresponding ages. The input variables include:
+- **Multiple Model Comparison**: Implementation and comparison of various machine learning models
+- **Interactive Visualizations**: Dynamic charts and plots showing relationships between variables
+- **Comprehensive Analysis**: In-depth statistical analysis of crab physical characteristics
+- **Feature Engineering**: Advanced feature creation and selection techniques
+
+## Technical Implementation
+
+### Data Science Stack
+
+- **R**: Primary language for statistical analysis and modeling
+  - Data cleaning and preprocessing
+  - Feature engineering
+  - Model training and evaluation
+  - Statistical analysis
+  - R Shiny dashboard development
+
+- **React**: Frontend web development
+  - Interactive visualization presentation
+  - Responsive design
+  - Modern user interface
+  - Component-based architecture
+
+### Models Implemented
+
+- Linear Regression
+- Random Forest
+- Support Vector Machine (SVM)
+- XGBoost
+- Ensemble Methods
+
+### Key Features Analyzed
 
 - Sex
 - Length
@@ -46,53 +56,70 @@ The dataset contains measurements of various crab physical attributes and their 
 - Viscera Weight
 - Shell Weight
 
-The target variable is Age.
+## Repository Structure
 
-## Running the Code
+```
+DS_6306_Project/
+├── data/                      # Data directory
+│   ├── train-1.csv           # Training data
+│   └── sample_submission-1.csv # Sample submission format
+├── scripts/                   # R scripts directory
+│   ├── 01_data_cleaning.R    # Data cleaning and preprocessing
+│   ├── 02_exploratory_analysis.R # EDA with visualizations
+│   ├── 03_feature_engineering.R # Feature creation and selection
+│   ├── 04_model_training.R   # Model training and evaluation
+│   ├── 05_model_prediction.R # Generate predictions
+│   └── 06_shiny_dashboard.R  # RShiny dashboard code
+├── models/                    # Trained model files
+├── output/                    # Analysis outputs
+│   ├── plots/                # Visualization files
+│   └── model_results/        # Model evaluation results
+├── reports/                   # Analysis reports
+└── ds6306-crab-presentation/ # Project website
+```
+
+## Getting Started
 
 ### Prerequisites
 
-The following R packages are required to run the code:
-
+Required R packages:
 ```r
-install.packages(c("tidyverse", "caret", "randomForest", "xgboost", "e1071", 
-                  "corrplot", "gridExtra", "ggpubr", "recipes", "vip", 
-                  "doParallel", "shiny", "shinydashboard", "shinythemes", 
-                  "plotly", "DT", "knitr", "kableExtra"))
+install.packages(c(
+    "tidyverse", "caret", "randomForest", "xgboost", "e1071",
+    "corrplot", "gridExtra", "ggpubr", "recipes", "vip",
+    "doParallel", "shiny", "shinydashboard", "shinythemes",
+    "plotly", "DT", "knitr", "kableExtra"
+))
 ```
 
-### Execution Order
+### Running the Analysis
 
-The scripts should be run in the following order:
+1. Clone the repository
+2. Install required R packages
+3. Run scripts in numerical order (01_data_cleaning.R through 06_shiny_dashboard.R)
+4. View results in the output directory
+5. Run the Shiny dashboard for interactive exploration
 
-1. `01_data_cleaning.R` - Cleans and preprocesses the data
-2. `02_exploratory_analysis.R` - Performs exploratory data analysis
-3. `03_feature_engineering.R` - Creates new features and selects important ones
-4. `04_model_training.R` - Trains and evaluates multiple models
-5. `05_model_prediction.R` - Generates predictions for the competition data
-6. `06_shiny_dashboard.R` - Launches the interactive dashboard
+## Team
 
-### Running the RShiny Dashboard
+- **Jonathan Rocha**
+  - React App Development
+  - R Shiny Development
+  - Website Implementation
+  - ML Engineering & Data Visualization
 
-To run the RShiny dashboard, execute the following command in R:
+- **Kyle Davisson**
+  - R Code Analysis
+  - Statistical Modeling
+  - R Shiny Dashboard Development
+  - Applied Statistical Analysis
 
-```r
-shiny::runApp("scripts/06_shiny_dashboard.R")
-```
+## Project Website
 
-## Analysis Report
+Visit our project website for interactive visualizations and detailed analysis:
+[https://jonx0037.github.io/DS_6306_Project/](https://jonx0037.github.io/DS_6306_Project/)
 
-The analysis report can be generated by knitting the R Markdown file in the `reports` directory:
+## Project Status
 
-```r
-rmarkdown::render("reports/analysis_report.Rmd")
-```
-
-## Authors
-
-- Jonathan Rocha
-- Kyle Davisson
-
-## Project Deadline
-
-Sunday, April 21st, 2025 at 11:59 pm CST
+This project is actively being developed for the DS 6306 course at Southern Methodist University.
+Project Deadline: Sunday, April 21st, 2025 at 11:59 pm CST
