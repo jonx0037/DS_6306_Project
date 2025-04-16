@@ -179,4 +179,4 @@ This project uses Git for version control with the following branch structure:
 - Jonathan Rocha - Data Scientist, Web Developer
 - Kyle Davisson - Data Scientist, Model Development
 
-For questions or contributions, please contact: jonathan.rocha@smu.edu
+For questions or contributions, please contact: jrocha@smu.edu
