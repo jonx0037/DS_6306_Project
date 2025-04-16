@@ -69,6 +69,30 @@ DS_6306_Project/
 - TypeScript-based components
 - Modern React architecture
 
+## Data Source
+The crab dataset contains physical measurements including sex, length, diameter, height, and various weight measurements, along with the age of crabs. This dataset is used for predictive modeling to determine crab age based on physical characteristics, which has applications in marine biology research and sustainable fishery management.
+
+## Dependencies
+
+### R Analysis
+- R version 4.2.0 or higher
+- Required Packages:
+  - tidyverse (data manipulation and visualization)
+  - caret (machine learning and preprocessing)
+  - randomForest (for Random Forest model)
+  - e1071 (for SVM model)
+  - xgboost (for XGBoost model)
+  - ggplot2 (visualization)
+  - corrplot (correlation visualization)
+
+### Web Application
+- Node.js 16.x or higher
+- npm 8.x or higher
+- React 18.2
+- TypeScript 4.9
+- Material UI 5.13
+- Recharts 2.6 (for data visualization)
+
 ## Setup Instructions
 1. **R Analysis**
    ```r
@@ -100,3 +124,59 @@ DS_6306_Project/
 - Models are saved in `models/`
 - Web app uses symbolic links to access plots
 - All intermediate data files are in `output/`
+
+## Version Control
+This project uses Git for version control with the following branch structure:
+- `main`: Production-ready code
+- `development`: Integration branch for feature development
+- `feature/*`: Individual feature branches
+
+### Contribution Guidelines
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit changes (`git commit -am 'Add new feature'`)
+4. Push to branch (`git push origin feature/your-feature`)
+5. Create a Pull Request to the development branch
+
+## Testing Strategy
+- **R Analysis**:
+  - Model validation using 5-fold cross-validation
+  - Performance metrics: RMSE, MAE, R²
+  - Out-of-sample testing with held-out validation set (20% of data)
+
+- **Web Application**:
+  - Jest unit tests for React components
+  - End-to-end testing with React Testing Library
+  - Cross-browser compatibility testing
+
+## Deployment Information
+- The web application is deployed to GitHub Pages: https://jonx0037.github.io/DS_6306_Project
+- For local deployment:
+  ```bash
+  cd ds6306-crab-presentation
+  npm run build
+  # Serve the build directory with your preferred HTTP server
+  ```
+- R analysis results are stored in version control and linked to the web application
+
+## Project Status
+- **Current Status**: Active Development (As of April 15, 2025)
+- **Completed**:
+  - Data preprocessing
+  - Exploratory data analysis
+  - Model training and validation
+  - Basic web application structure
+- **In Progress**:
+  - Refining model performance
+  - Enhancing visualization interactivity
+  - Documentation improvements
+- **Planned**:
+  - Integration of additional feature engineering techniques
+  - Implementation of ensemble modeling approach
+  - Deployment of Shiny dashboard for data exploration
+
+## Project Team
+- Jonathan Rocha - Data Scientist, Web Developer
+- Kyle Davisson - Data Scientist, Model Development
+
+For questions or contributions, please contact: jonathan.rocha@smu.edu
