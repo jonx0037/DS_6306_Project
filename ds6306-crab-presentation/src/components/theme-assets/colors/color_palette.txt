@@ -1,0 +1,19 @@
+SMU COLOR PALETTE
+
+Primary Colors:
+- SMU Blue: #354CA1
+- SMU Red: #C8102E
+
+Neutral Colors:
+- Light Gray: #f5f5f5
+- Dark Gray: #333333
+
+Accent Colors:
+- Accent: #5ab4ac
+
+Usage Guidelines:
+- Use SMU Blue for primary elements, headers, and main UI components
+- Use SMU Red for call-to-action buttons, alerts, and important highlights
+- Use Light Gray for backgrounds and subtle separators
+- Use Dark Gray for body text and secondary elements
+- Use Accent color for visualization elements and secondary accents

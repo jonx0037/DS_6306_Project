@@ -3,35 +3,40 @@ import { createTheme } from '@mui/material/styles';
 export const theme = createTheme({
   palette: {
     primary: {
+      main: '#354CA1', // SMU Blue per brand guidelines
+      light: '#5a6db8',
+      dark: '#253571',
+    },
+    secondary: {
       main: '#C8102E', // SMU Red
       light: '#d13f56',
       dark: '#8c0b20',
     },
-    secondary: {
-      main: '#003366', // Navy Blue
-      light: '#335c85',
-      dark: '#002347',
-    },
     background: {
       default: '#FFFFFF',
-      paper: '#F5F5F5',
+      paper: '#f5f5f5', // Light Gray from brand palette
     },
     text: {
-      primary: '#333333',
+      primary: '#333333', // Dark Gray from brand palette
       secondary: '#666666',
+    },
+    // Add accent color from SMU palette
+    info: {
+      main: '#5ab4ac', // Accent color for visualizations
     },
   },
   typography: {
-    fontFamily: '"Source Sans Pro", "Helvetica", "Arial", sans-serif',
+    // Use Arial as accessible alternative to Trade Gothic per SMU guidelines
+    fontFamily: '"Arial", "Helvetica", sans-serif',
     h1: {
       fontSize: '2.5rem',
       fontWeight: 700,
-      color: '#C8102E',
+      color: '#354CA1', // SMU Blue for headers
     },
     h2: {
       fontSize: '2rem',
       fontWeight: 600,
-      color: '#003366',
+      color: '#354CA1', // SMU Blue for headers
     },
     h3: {
       fontSize: '1.75rem',
@@ -79,6 +84,27 @@ export const theme = createTheme({
         root: {
           borderRadius: 8,
           boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05)',
+          transition: 'transform 0.2s ease-in-out',
+          '&:hover': {
+            transform: 'translateY(-4px)',
+          },
+        },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+        },
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          fontWeight: 600,
+          '&.Mui-selected': {
+            color: '#354CA1',
+          },
         },
       },
     },

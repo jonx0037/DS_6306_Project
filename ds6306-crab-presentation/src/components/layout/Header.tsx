@@ -3,20 +3,41 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 
 const Header = () => {
   return (
-    <AppBar position="static" color="default" elevation={1}>
+    <AppBar 
+      position="static" 
+      sx={{ 
+        backgroundColor: 'white',
+        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)'
+      }}
+    >
       <Toolbar>
         <Box display="flex" alignItems="center" flexGrow={1}>
-          {/* TODO: Add SMU logo image */}
-          <Typography
-            variant="h6"
-            sx={{
-              color: 'primary.main',
-              fontWeight: 600,
-              marginLeft: 2
-            }}
-          >
-            DS 6306 Project
-          </Typography>
+          <Box sx={{ height: 50, mr: 2, display: 'flex', alignItems: 'center' }}>
+            <img 
+              src={`${process.env.PUBLIC_URL}/assets/smu-logo.png`} 
+              alt="SMU Logo" 
+              style={{ height: '40px' }} 
+            />
+          </Box>
+          <Box>
+            <Typography
+              variant="h6"
+              sx={{
+                color: 'primary.main',
+                fontWeight: 600
+              }}
+            >
+              Crab Age Prediction
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary'
+              }}
+            >
+              DS 6306 Project
+            </Typography>
+          </Box>
         </Box>
         
         <Button
@@ -25,6 +46,13 @@ const Header = () => {
           rel="noopener noreferrer"
           startIcon={<GitHubIcon />}
           color="primary"
+          variant="outlined"
+          size="small"
+          sx={{ 
+            borderRadius: 2,
+            textTransform: 'none',
+            fontWeight: 500
+          }}
         >
           GitHub
         </Button>
