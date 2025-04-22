@@ -652,16 +652,3 @@ Future work could focus on:
 - Collecting more data for underrepresented age groups to improve prediction accuracy across the entire age spectrum
 - Testing the model on crabs from different geographical regions to assess its generalizability
 
-# Appendix
-
-## Additional Visualizations
-
-[Include any additional visualizations that provide further insights but were not included in the main report]
-
-## Model Details
-
-[Include detailed model specifications, hyperparameters, and other technical details]
-
-## References
-
-[Include any references used in the analysis]
