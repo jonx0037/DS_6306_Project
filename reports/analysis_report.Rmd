@@ -43,7 +43,7 @@ This report presents a comprehensive analysis of crab age prediction based on ph
 
 **Model Performance:**
 
-- Random Forest achieved the lowest Mean Absolute Error (MAE) of 1.412 years
+- SVM (Support Vector Machine) achieved the lowest Mean Absolute Error (MAE) of 1.38 
 - All models (Random Forest, XGBoost, SVM, Linear Regression) performed relatively well, with MAEs between 1.41-1.46 years
 
 # Introduction
@@ -651,4 +651,3 @@ Future work could focus on:
 - Exploring deep learning approaches that might capture more complex, non-linear relationships in the data
 - Collecting more data for underrepresented age groups to improve prediction accuracy across the entire age spectrum
 - Testing the model on crabs from different geographical regions to assess its generalizability
-
