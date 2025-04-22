@@ -57,12 +57,12 @@ cat("Column names of feature-engineered data (first 10):",
 
 # 2. Create ratio features
 cat("\nCreating ratio features...\n")
-# Function to create ratio features
+
+# Function to create ratio features (unchanged)
 create_ratio_features <- function(data, predictors) {
   result <- data
   n <- length(predictors)
   
-  # Create ratios between different measurements
   for (i in 1:(n-1)) {
     for (j in (i+1):n) {
       col1 <- predictors[i]
@@ -72,17 +72,33 @@ create_ratio_features <- function(data, predictors) {
     }
   }
   
-  return(result)
+  result
 }
 
-# Apply ratio feature creation to training and validation sets
-train_data_with_ratios <- create_ratio_features(training_set, numerical_predictors)
-valid_data_with_ratios <- create_ratio_features(validation_set, numerical_predictors)
+# 2a) Build ratio‑only tables from the raw preprocessed data
+ratio_train <- create_ratio_features(training_set, numerical_predictors) %>%
+  select(starts_with("ratio_"))
+ratio_valid <- create_ratio_features(validation_set, numerical_predictors) %>%
+  select(starts_with("ratio_"))
 
-cat("Dimensions of training data with ratio features:", dim(train_data_with_ratios), "\n")
-cat("New ratio features (first 5):", 
-    paste(setdiff(names(train_data_with_ratios), names(training_set))[1:min(5, length(setdiff(names(train_data_with_ratios), names(training_set))))], 
-          collapse = ", "), "...\n")
+# 2b) Bind id back on, then recipe output, then ratios
+train_data_with_ratios <- bind_cols(id = training_set$id, train_data_fe,
+                                    ratio_train)
+valid_data_with_ratios <- bind_cols(id = validation_set$id, valid_data_fe, 
+                                    ratio_valid)
+saveRDS(
+  train_data_with_ratios,
+  file = "output/train_data_full_features.rds"
+)
+cat(
+  "Dimensions of training data with interactions/polys/normalized originals + ratios:",
+  dim(train_data_with_ratios), "\n"
+)
+cat(
+  "New ratio features (first 5):",
+  paste(names(ratio_train)[1:min(5, ncol(ratio_train))], collapse = ", "),
+  "...\n"
+)
 
 # 3. Feature selection using correlation
 cat("\nPerforming feature selection using correlation...\n")

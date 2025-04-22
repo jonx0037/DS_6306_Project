@@ -1,6 +1,6 @@
 ################################################################################
 # DS_6306 Project 2: Crab Age Prediction
-# Script: 02_exploratory_analysis.Rs
+# Script: 02_exploratory_analysis.R
 # Description: Exploratory data analysis for crab age prediction
 # Author: Jonathan Rocha, Kyle Davisson (Group 3)
 # Date: April 7, 2025
@@ -9,8 +9,7 @@
 # Load required libraries
 library(tidyverse)  # For data manipulation and visualization
 library(corrplot)   # For correlation plots
-library(gridExtra)  # For arranging multiple plots
-library(ggpubr)     # For publication-ready plots
+library(GGally)     # For pair plot
 
 # Set seed for reproducibility
 set.seed(6306)
@@ -43,11 +42,11 @@ save_plot <- function(plot, filename, width = 10, height = 6) {
 # 1. Distribution of crab ages
 cat("\nCreating distribution plot of crab ages...\n")
 age_dist_plot <- ggplot(train_data, aes(x = Age)) +
-  geom_histogram(bins = 30, fill = "steelblue", color = "black", alpha = 0.7) +
-  geom_density(alpha = 0.2, fill = "red") +
+  geom_histogram(binwidth=1, fill = "steelblue", color = "gray", alpha = 0.8) +
+  scale_x_continuous(breaks = seq(0, 30, by=5)) +
   labs(
     title = "Distribution of Crab Ages",
-    subtitle = "Histogram with density overlay",
+    subtitle = "Histogram",
     x = "Age (years)",
     y = "Count",
     caption = "Source: Training dataset"
@@ -91,22 +90,22 @@ for (predictor in numerical_predictors) {
   scatter_plots[[predictor]] <- p
   save_plot(p, paste0("scatter_", predictor, "_vs_age.png"))
 }
--
-# 3. Correlation matrix of numerical variables
-cat("\nCreating correlation matrix of numerical variables...\n")
+
+  # 3. Correlation matrix of numerical variables
+  cat("\nCreating correlation matrix of numerical variables...\n")
 numerical_data <- train_data[, c(numerical_predictors, "Age")]
 correlation_matrix <- cor(numerical_data, use = "complete.obs")
 
 # Create correlation plot
 corr_plot <- corrplot(correlation_matrix, 
-                     method = "circle", 
-                     type = "upper", 
-                     tl.col = "black", 
-                     tl.srt = 45,
-                     addCoef.col = "black",
-                     number.cex = 0.7,
-                     title = "Correlation Matrix of Crab Features",
-                     mar = c(0, 0, 2, 0))
+                      method = "circle", 
+                      type = "upper", 
+                      tl.col = "black", 
+                      tl.srt = 45,
+                      addCoef.col = "white",
+                      number.cex = 0.7,
+                      title = "Correlation Matrix of Crab Features",
+                      mar = c(0, 0, 2, 0))
 
 # Save correlation plot as PNG
 png("output/plots/correlation_matrix.png", width = 10, height = 8, units = "in", res = 300)
@@ -115,7 +114,7 @@ corrplot(correlation_matrix,
          type = "upper", 
          tl.col = "black", 
          tl.srt = 45,
-         addCoef.col = "black",
+         addCoef.col = "white",
          number.cex = 0.7,
          title = "Correlation Matrix of Crab Features",
          mar = c(0, 0, 2, 0))
@@ -170,7 +169,10 @@ if ("Sex" %in% names(train_data)) {
   save_plot(age_by_sex_plot, "age_by_sex.png")
   
   # Scatter plots of key measurements by Sex
-  for (predictor in numerical_predictors[1:min(4, length(numerical_predictors))]) {
+  corr_with_age <- correlation_matrix["Age", numerical_predictors]
+  top4_predictors <- names(sort(abs(corr_with_age), decreasing = TRUE))[1:4]
+  
+  for (predictor in top4_predictors) {
     p <- ggplot(train_data, aes_string(x = predictor, y = "Age", color = "Sex")) +
       geom_point(alpha = 0.5) +
       geom_smooth(method = "loess") +
@@ -194,27 +196,23 @@ if ("Sex" %in% names(train_data)) {
 # 6. Pair plot of key variables
 cat("\nCreating pair plot of key variables...\n")
 # Select a subset of variables for the pair plot to keep it readable
-key_variables <- c(sample(numerical_predictors, min(4, length(numerical_predictors))), "Age")
+key_variables <- c(top4_predictors, "Age")
 pair_data <- train_data[, key_variables]
 
 # Create GGally pair plot
-if (requireNamespace("GGally", quietly = TRUE)) {
-  library(GGally)
-  pair_plot <- ggpairs(pair_data,
-                      title = "Pair Plot of Key Variables",
-                      axisLabels = "show") +
-    theme_minimal() +
-    theme(
-      plot.title = element_text(size = 16, face = "bold"),
-      axis.title = element_text(size = 10),
-      axis.text = element_text(size = 8)
-    )
-  
-  print(pair_plot)
-  save_plot(pair_plot, "pair_plot_key_variables.png", width = 12, height = 10)
-} else {
-  cat("GGally package not available. Skipping pair plot.\n")
-}
+pair_plot <- ggpairs(pair_data,
+                     title = "Pair Plot of Key Variables",
+                     axisLabels = "show") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 8)
+  )
+
+print(pair_plot)
+save_plot(pair_plot, "pair_plot_key_variables.png", width = 12, height = 10)
+
 
 cat("\nExploratory data analysis completed. Plots saved to 'output/plots/' directory.\n")
 

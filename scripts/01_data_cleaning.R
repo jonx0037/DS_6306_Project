@@ -59,6 +59,27 @@ identify_outliers <- function(x) {
 outliers_count <- sapply(numerical_data, identify_outliers)
 print(outliers_count)
 
+#Looking at suspect clusters
+Outliers <- train_data %>% select(Length, Diameter, Height, Shucked.Weight) %>% ggpairs() +
+  ggtitle("Pairwise Plots of Crab Measurements (Outlier Check)")
+
+##HEIGHT impute median for age = 3 and mean for 4,5,6
+train_data$Height[train_data$Age == 3 & train_data$Height == 0] <- median(train_data$Height[train_data$Age == 3 & train_data$Height != 0])
+train_data$Height[train_data$Age == 4 & train_data$Height == 0] <- mean(train_data$Height[train_data$Age == 4 & train_data$Height != 0])
+train_data$Height[train_data$Age == 5 & train_data$Height == 0] <- mean(train_data$Height[train_data$Age == 5 & train_data$Height != 0])
+train_data$Height[train_data$Age == 6 & train_data$Height == 0] <- mean(train_data$Height[train_data$Age == 6 & train_data$Height != 0])
+
+##DIAMETER impute median for age 4 and mean for age 5
+train_data$Diameter[train_data$Age == 4 & train_data$Diameter == 0] <- median(train_data$Diameter[train_data$Age == 4 & train_data$Diameter != 0])
+train_data$Diameter[train_data$Age == 5 & train_data$Diameter == 0] <- mean(train_data$Diameter[train_data$Age == 5 & train_data$Diameter != 0])
+
+##Decimal place needs to be moved
+ShuckedTableBefore <- train_data %>% filter(Shucked.Weight > 10 & Length < .75)
+train_data <- train_data %>% mutate(Shucked.Weight = if_else(Shucked.Weight > 10 & Length < 0.75,
+                                                             Shucked.Weight / 10, Shucked.Weight))
+OutliersGone <- train_data %>% select(Length, Diameter, Height, Shucked.Weight) %>% ggpairs() +
+  ggtitle("Pairwise Plots of Crab Measurements (0's and Decimals Fixed")
+
 # Handle categorical variables (if any)
 cat("\nHandling categorical variables...\n")
 # Check if 'Sex' is a column in the dataset
@@ -68,18 +89,6 @@ if ("Sex" %in% names(train_data)) {
   cat("Levels of Sex:", levels(train_data$Sex), "\n")
 }
 
-# Normalize/standardize numerical features
-cat("\nNormalizing numerical features...\n")
-# Identify columns to normalize (exclude ID and target variable)
-cols_to_normalize <- setdiff(names(numerical_data), c("id", "Age"))
-
-# Create preprocessing object
-preproc <- preProcess(train_data[, cols_to_normalize], method = c("center", "scale"))
-train_data_normalized <- predict(preproc, train_data)
-
-cat("First few rows of normalized data:\n")
-print(head(train_data_normalized[, cols_to_normalize]))
-
 # Split data into training and validation sets (80% train, 20% validation)
 cat("\nSplitting data into training and validation sets...\n")
 train_index <- createDataPartition(train_data$Age, p = 0.8, list = FALSE)
@@ -88,6 +97,20 @@ validation_set <- train_data[-train_index, ]
 
 cat("Training set dimensions:", dim(training_set), "\n")
 cat("Validation set dimensions:", dim(validation_set), "\n")
+
+# Normalize/standardize numerical features
+cat("\nNormalizing numerical features...\n")
+cols_to_normalize <- setdiff(
+  names(training_set)[sapply(training_set, is.numeric)],
+  c("id","Age")
+)
+preproc <- preProcess(training_set[, cols_to_normalize], 
+                      method = c("center","scale"))
+train_data_normalized <- predict(preproc, training_set)
+validation_normalized <- predict(preproc, validation_set)
+
+cat("First few rows of normalized data:\n")
+print(head(train_data_normalized[, cols_to_normalize]))
 
 # Save preprocessed data for later use
 cat("\nSaving preprocessed data...\n")

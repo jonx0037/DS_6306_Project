@@ -61,82 +61,90 @@ cat("Sample submission column names:", names(sample_submission), "\n")
 cat("First few rows of sample submission:\n")
 print(head(sample_submission))
 
-# Preprocess competition data
+# Preprocess & Feature‑Engineer Competition Data
 cat("\nPreprocessing competition data...\n")
 
-# Apply the same preprocessing steps as for training data
-competition_data_processed <- predict(preproc, competition_data)
+# a) Initial caret preProcess (imputation, centering/scaling)
+competition_pp <- predict(preproc, competition_data)
 
-# Handle categorical variables (if any)
-if ("Sex" %in% names(competition_data)) {
-  cat("Converting 'Sex' to factor...\n")
-  competition_data_processed$Sex <- as.factor(competition_data_processed$Sex)
-}
+# b) Full recipes pipeline (interactions, polys, normalization)
+competition_fe <- bake(feature_recipe, new_data = competition_pp)
 
-# Apply feature engineering if recipe is available
-if (!is.null(feature_recipe)) {
-  cat("Applying feature engineering...\n")
-  
-  # Function to create ratio features (same as in feature engineering script)
-  create_ratio_features <- function(data, predictors) {
-    result <- data
-    n <- length(predictors)
-    
-    # Create ratios between different measurements
-    for (i in 1:(n-1)) {
-      for (j in (i+1):n) {
-        col1 <- predictors[i]
-        col2 <- predictors[j]
-        ratio_name <- paste0("ratio_", col1, "_to_", col2)
-        result[[ratio_name]] <- data[[col1]] / data[[col2]]
-      }
+# c) Manually recreate ratio features (since your recipe doesn’t include them)
+create_ratio_features <- function(data, predictors) {
+  result <- data
+  n <- length(predictors)
+  for (i in seq_len(n-1)) {
+    for (j in seq((i+1), n)) {
+      col1 <- predictors[i]; col2 <- predictors[j]
+      ratio_name <- paste0("ratio_", col1, "_to_", col2)
+      result[[ratio_name]] <- data[[col1]] / data[[col2]]
     }
-    
-    return(result)
   }
-  
-  # Identify numerical predictors (excluding id)
-  numerical_predictors <- names(competition_data)[sapply(competition_data, is.numeric)]
-  numerical_predictors <- setdiff(numerical_predictors, "id")
-  
-  # Create ratio features
-  competition_data_processed <- create_ratio_features(competition_data_processed, numerical_predictors)
-  
-  # Select only the features used in the model
-  if (!is.null(selected_features)) {
-    # Ensure id column is included
-    competition_data_processed <- competition_data_processed %>%
-      select(id, all_of(intersect(names(competition_data_processed), selected_features)))
-  }
+  result
 }
 
-cat("Processed competition data dimensions:", dim(competition_data_processed), "\n")
+# Identify raw numeric cols (excluding id)
+num_cols <- setdiff(
+  names(competition_data)[sapply(competition_data, is.numeric)],
+  "id"
+)
 
-# Generate predictions
-cat("\nGenerating predictions...\n")
-competition_predictions <- predict(best_model, newdata = competition_data_processed %>% select(-id))
+# Build a small DF of ratio features from the pre-processed raw data
+competition_ratios <- create_ratio_features(
+  competition_pp[, num_cols], num_cols
+) %>% 
+  select(starts_with("ratio_"))
+
+# d) Combine baked features + ratio features, then re‑attach id and subset
+competition_full <- bind_cols(competition_fe, competition_ratios)
+
+competition_final <- bind_cols(
+  id = competition_data$id,
+  competition_full %>% select(all_of(selected_features))
+)
+
+cat("Final competition data dimensions:", dim(competition_final), "\n")
+
+# Encode predictors for numeric-only models (XGB, SVM)
+cat("\nEncoding predictors for numeric-only model...\n")
+
+# a) Read in the same final training data you used for modeling
+train_data_final <- readRDS("output/train_data_final.rds")
+
+# b) Recreate the dummyVars mapping on all predictor columns
+# Note: drop id and Age
+dummies <- dummyVars(
+  formula = ~ .,
+  data    = train_data_final %>% select(-id, -Age)
+)
+
+# c) Apply to competition features (also drop id)
+competition_mat <- predict(
+  dummies,
+  newdata = competition_final %>% select(-id)
+)
+
+# d) Now generate predictions
+cat("Generating predictions...\n")
+competition_predictions <- predict(best_model, newdata = competition_mat)
 
 # Create submission file
 cat("Creating submission file...\n")
-submission <- data.frame(
-  id = competition_data$id,
+submission <- tibble(
+  id  = competition_final$id,
   Age = competition_predictions
 )
 
-# Ensure submission has the same format as sample_submission
-if (nrow(submission) != nrow(sample_submission)) {
-  warning("Submission has different number of rows than sample submission!")
-}
+# Sanity checks against the sample submission
+if (nrow(submission) != nrow(sample_submission))
+  stop("❌ Row count mismatch vs. sample submission!")
+if (!all(submission$id == sample_submission$id))
+  stop("❌ IDs misaligned vs. sample submission!")
 
-if (!all(submission$id == sample_submission$id)) {
-  warning("Submission IDs don't match sample submission IDs!")
-  # Sort by ID to match sample submission
-  submission <- submission %>% arrange(id)
-}
-
-# Save submission file
-cat("Saving submission file...\n")
-write.csv(submission, "output/submission.csv", row.names = FALSE)
+# Write it out
+write_csv(submission, "output/submission.csv")
+cat("Submission file saved to output/submission.csv\n")
 
 # Basic statistics of predictions
 cat("\nBasic statistics of predictions:\n")

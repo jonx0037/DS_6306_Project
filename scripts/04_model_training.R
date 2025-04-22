@@ -48,10 +48,12 @@ if (!dir.exists("models")) {
 
 # Define cross-validation settings
 cv_control <- trainControl(
-  method = "cv",
-  number = 5,
-  verboseIter = TRUE,
-  allowParallel = TRUE
+  method = "cv", number = 5, verboseIter = TRUE, allowParallel = TRUE,
+  summaryFunction = function(data, lev = NULL, model = NULL) {
+    c(RMSE    = defaultSummary(data, lev, model)["RMSE"],
+      Rsquared= defaultSummary(data, lev, model)["Rsquared"],
+      MAE     = mean(abs(data$obs - data$pred)))
+  }
 )
 
 # 1. Linear Regression (Baseline)
@@ -100,45 +102,48 @@ saveRDS(rf_model, "models/random_forest_model.rds")
 
 # 3. Gradient Boosting (XGBoost)
 cat("\n========== Training XGBoost Model ==========\n")
+
 # Use a simpler grid for XGBoost
 xgb_grid <- expand.grid(
-  nrounds = 100,
-  max_depth = 6,
-  eta = 0.1,
-  gamma = 0,
-  colsample_bytree = 0.8,
-  min_child_weight = 1,
-  subsample = 0.8
+  nrounds         = 100,
+  max_depth       = 6,
+  eta             = 0.1,
+  gamma           = 0,
+  colsample_bytree= 0.8,
+  min_child_weight= 1,
+  subsample       = 0.8
 )
+
+# One‑hot encode all predictors (including 'Sex') for numeric-only methods
+xgb_dummies   <- dummyVars(~ ., data = train_x)
+train_mat_xgb <- predict(xgb_dummies, newdata = train_x)
+valid_mat_xgb <- predict(xgb_dummies, newdata = valid_x)
 
 # Try-catch block to handle potential errors
 tryCatch({
   xgb_model <- train(
-    x = train_x,
-    y = train_y,
-    method = "xgbTree",
+    x         = train_mat_xgb,
+    y         = train_y,
+    method    = "xgbTree",
     trControl = cv_control,
-    tuneGrid = xgb_grid,
-    metric = "MAE",
+    tuneGrid  = xgb_grid,
+    metric    = "MAE",
     verbosity = 0
   )
 }, error = function(e) {
-  # If XGBoost fails, use a simpler approach with randomForest
   cat("XGBoost training failed with error:", conditionMessage(e), "\n")
   cat("Using randomForest as a fallback for XGBoost...\n")
-  
-  # Train a simple random forest model as a fallback
   xgb_model <<- randomForest(
-    x = train_x,
-    y = train_y,
-    ntree = 100,
+    x          = train_mat_xgb,
+    y          = train_y,
+    ntree      = 100,
     importance = TRUE
   )
 })
 
 # Evaluate on validation set
-xgb_pred <- predict(xgb_model, newdata = valid_x)
-xgb_mae <- mae(valid_y, xgb_pred)
+xgb_pred <- predict(xgb_model, newdata = valid_mat_xgb)
+xgb_mae  <- mae(valid_y, xgb_pred)
 cat("XGBoost Validation MAE:", xgb_mae, "\n")
 
 # Print parameters if available
@@ -153,68 +158,69 @@ if (!is.null(xgb_model$bestTune)) {
 # Save model
 saveRDS(xgb_model, "models/xgboost_model.rds")
 
+
 # 4. Support Vector Machine (SVM)
 cat("\n========== Training SVM Model ==========\n")
 
-# Try-catch block to handle potential errors
+# Reuse the same dummyVars for SVM
+svm_dummies <- xgb_dummies
+
 tryCatch({
-  # Check if kernlab is installed
   if (!requireNamespace("kernlab", quietly = TRUE)) {
     stop("Package 'kernlab' is not installed")
   }
   
-  # Use a smaller subset for SVM due to computational complexity
   set.seed(6306)
-  svm_sample_idx <- sample(nrow(train_data), min(5000, nrow(train_data)))
-  svm_train_x <- train_x[svm_sample_idx, ]
-  svm_train_y <- train_y[svm_sample_idx]
+  svm_idx       <- sample(nrow(train_x), min(5000, nrow(train_x)))
+  svm_train_x   <- train_x[svm_idx, ]
+  svm_train_y   <- train_y[svm_idx]
+  
+  # One‑hot encode the SVM training subset and the full validation set
+  train_mat_svm <- predict(svm_dummies, newdata = svm_train_x)
+  valid_mat_svm <- predict(svm_dummies, newdata = valid_x)
   
   svm_grid <- expand.grid(
-    C = c(0.1, 1, 10),
+    C     = c(0.1, 1, 10),
     sigma = c(0.01, 0.1, 1)
   )
   
   svm_model <- train(
-    x = svm_train_x,
-    y = svm_train_y,
-    method = "svmRadial",
+    x         = train_mat_svm,
+    y         = svm_train_y,
+    method    = "svmRadial",
     trControl = cv_control,
-    tuneGrid = svm_grid,
-    metric = "MAE"
+    tuneGrid  = svm_grid,
+    metric    = "MAE"
   )
   
-  # Evaluate on validation set
-  svm_pred <- predict(svm_model, newdata = valid_x)
-  svm_mae <- mae(valid_y, svm_pred)
+  svm_pred <- predict(svm_model, newdata = valid_mat_svm)
+  svm_mae  <- mae(valid_y, svm_pred)
   cat("SVM Validation MAE:", svm_mae, "\n")
   cat("Best SVM parameters: C =", svm_model$bestTune$C, 
       ", sigma =", svm_model$bestTune$sigma, "\n")
   
-  # Save model
   saveRDS(svm_model, "models/svm_model.rds")
   
 }, error = function(e) {
-  # If SVM fails, use a simpler approach with randomForest
   cat("SVM training failed with error:", conditionMessage(e), "\n")
   cat("Using randomForest as a fallback for SVM...\n")
   
-  # Train a simple random forest model as a fallback
+  # Fallback: still encode train_x fully
+  fallback_x <- predict(svm_dummies, newdata = train_x)
+  fallback_v <- predict(svm_dummies, newdata = valid_x)
+  
   svm_model <<- randomForest(
-    x = train_x,
-    y = train_y,
-    ntree = 100,
+    x          = fallback_x,
+    y          = train_y,
+    ntree      = 100,
     importance = TRUE
   )
-  
-  # Evaluate on validation set
-  svm_pred <<- predict(svm_model, newdata = valid_x)
-  svm_mae <<- mae(valid_y, svm_pred)
+  svm_pred  <<- predict(svm_model, newdata = fallback_v)
+  svm_mae   <<- mae(valid_y, svm_pred)
   cat("SVM (fallback) Validation MAE:", svm_mae, "\n")
   
-  # Save model
   saveRDS(svm_model, "models/svm_model.rds")
 })
-
 # 5. Model Comparison
 cat("\n========== Model Comparison ==========\n")
 model_results <- data.frame(
