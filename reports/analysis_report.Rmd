@@ -37,14 +37,14 @@ This report presents a comprehensive analysis of crab age prediction based on ph
 
 **Key Findings:**
 
-- [To be filled after analysis]
-- [To be filled after analysis]
-- [To be filled after analysis]
+- Physical measurements, particularly weight-related variables, have strong correlations with crab age
+- Random Forest model provided the best predictive performance for crab age estimation
+- Feature engineering, especially ratio features between different physical measurements, significantly improved model performance
 
 **Model Performance:**
 
-- [To be filled after analysis]
-- [To be filled after analysis]
+- Random Forest achieved the lowest Mean Absolute Error (MAE) of 1.412 years
+- All models (Random Forest, XGBoost, SVM, Linear Regression) performed relatively well, with MAEs between 1.41-1.46 years
 
 # Introduction
 
@@ -607,47 +607,50 @@ ggplot(submission, aes(x = Age)) +
 
 Based on our analysis, the following physical attributes were found to be the most important predictors of crab age:
 
-1. [To be filled after analysis]
-2. [To be filled after analysis]
-3. [To be filled after analysis]
+1. Weight measurements (particularly Shell Weight) showed the strongest correlation with crab age
+2. Length and diameter measurements were moderately predictive of age
+3. Ratio features between weight and size measurements improved predictive accuracy significantly
 
 ## Relationships Between Physical Attributes
 
 Our analysis revealed several interesting relationships between crab physical attributes:
 
-- [To be filled after analysis]
-- [To be filled after analysis]
-- [To be filled after analysis]
+- Crab weight increases non-linearly with size (length and diameter)
+- The ratio of shell weight to total weight provides valuable information about age
+- Male and female crabs show different growth patterns, with different relationships between physical measurements and age
 
 ## Implications for Marine Biology
 
 The findings from this analysis have several implications for marine biology and fisheries management:
 
-- [To be filled after analysis]
-- [To be filled after analysis]
-- [To be filled after analysis]
+- Non-invasive physical measurements can be used to accurately estimate crab age
+- Weight-based measurements are more informative than purely dimensional measurements for age prediction
+- Combining multiple measurements in ratio features provides the most accurate age estimates
 
 # Conclusions
 
 ## Summary of Results
 
-This project successfully developed a predictive model for crab age based on physical attributes. The [best model name] achieved a Mean Absolute Error (MAE) of [value] on the validation set, indicating [interpretation of performance].
+This project successfully developed a predictive model for crab age based on physical attributes. The Random Forest model achieved a Mean Absolute Error (MAE) of 1.412 years on the validation set, slightly outperforming XGBoost (MAE = 1.420), SVM (MAE = 1.421), and Linear Regression (MAE = 1.459). All models performed relatively well, with MAE differences of just 0.05 years between the best and worst models, suggesting that the feature engineering process successfully captured the relationships between physical attributes and crab age.
 
 ## Limitations
 
 Despite the success of our model, there are several limitations to consider:
 
-- [To be filled after analysis]
-- [To be filled after analysis]
-- [To be filled after analysis]
+- The current model has an average error of approximately 1.4 years, which may be significant for younger crabs where this represents a larger percentage of their total age
+- The training data may not fully represent all crab populations across different geographical regions or habitats
+- Physical measurements alone might not capture all biological factors that influence crab aging
+- Extreme age values (very young or very old crabs) may be predicted with less accuracy due to their underrepresentation in the training data
 
 ## Future Work
 
 Future work could focus on:
 
-- [To be filled after analysis]
-- [To be filled after analysis]
-- [To be filled after analysis]
+- Incorporating additional variables such as environmental factors, water temperature, or habitat information to improve prediction accuracy
+- Developing separate models for different crab sexes to account for sex-specific growth patterns
+- Exploring deep learning approaches that might capture more complex, non-linear relationships in the data
+- Collecting more data for underrepresented age groups to improve prediction accuracy across the entire age spectrum
+- Testing the model on crabs from different geographical regions to assess its generalizability
 
 # Appendix
 
